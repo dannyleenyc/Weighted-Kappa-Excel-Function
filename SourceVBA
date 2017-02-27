@@ -1,0 +1,74 @@
+Function wkap(rngObs As Variant, Optional rngWgh As Variant) As Double
+
+Dim sizeRng As Integer
+sizeRng = rngObs.Rows.Count     ' Get size of range from param for reuse
+Dim rowTotals() As Double, colTotals() As Double
+ReDim rowTotals(0 To sizeRng), colTotals(0 To sizeRng)
+Dim total As Double
+Dim aryExp() As Double
+ReDim aryExp(0 To sizeRng, 0 To sizeRng)
+Dim numVal, denVal As Double
+
+Dim aryWgh() As Variant
+
+If IsMissing(rngWgh) Then           ' Determine whether a Weights range paramater was passed
+ReDim aryWgh(sizeRng, sizeRng) As Variant
+
+' Create default weights table
+Dim c As Integer, incFlag As Boolean
+For a = 1 To sizeRng
+incFlag = False
+c = a - 1
+For b = 1 To sizeRng
+aryWgh(a, b) = c
+
+If c = 0 Then
+incFlag = True
+End If
+
+If incFlag = True Then
+c = c + 1
+Else
+c = c - 1
+End If
+
+Next b
+Next a
+Else
+aryWgh = rngWgh.Value       ' Cast Weights range into array
+End If
+
+' Generate Totals
+For x = 1 To sizeRng
+For y = 1 To sizeRng
+rowTotals(x) = rowTotals(x) + rngObs(x, y) ' Row Totals
+colTotals(y) = colTotals(y) + rngObs(x, y) ' Col Totals
+Next y
+Next x
+
+total = WorksheetFunction.Sum(rowTotals)
+
+' Generate Expected Scores Table
+For k = 1 To sizeRng
+For j = 1 To sizeRng
+aryExp(j, k) = colTotals(k) * rowTotals(j) / total
+Next j
+Next k
+
+' Observed Scores weighted
+For n = 1 To sizeRng
+For m = 1 To sizeRng
+numVal = numVal + rngObs.Cells(m, n) * aryWgh(m, n)
+Next m
+Next n
+
+' Expected Scores table weighted
+For n = 1 To sizeRng
+For m = 1 To sizeRng
+denVal = denVal + aryExp(m, n) * aryWgh(m, n)
+Next m
+Next n
+
+wkap = 1 - numVal / denVal
+
+End Function
